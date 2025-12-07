@@ -9,9 +9,9 @@ import {
   Laugh,
   Sparkles,
   Film,
-  Music,
   Mic,
-  ArrowRight
+  ArrowRight,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,7 +21,8 @@ const templates = [
     title: "News & Facts",
     description: "Breaking news, science facts, tech updates",
     icon: Newspaper,
-    color: "bg-blue-500/10 text-blue-500",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    iconColor: "text-blue-400",
     tags: ["News", "Science", "Tech"],
   },
   {
@@ -29,7 +30,8 @@ const templates = [
     title: "True Crime",
     description: "Mystery stories, crime investigations",
     icon: Skull,
-    color: "bg-red-500/10 text-red-500",
+    gradient: "from-red-500/20 to-orange-500/20",
+    iconColor: "text-red-400",
     tags: ["Crime", "Mystery", "Horror"],
   },
   {
@@ -37,7 +39,8 @@ const templates = [
     title: "Psychology",
     description: "Mind facts, relationships, self-improvement",
     icon: Brain,
-    color: "bg-purple-500/10 text-purple-500",
+    gradient: "from-purple-500/20 to-pink-500/20",
+    iconColor: "text-purple-400",
     tags: ["Psychology", "Dating", "Self-help"],
   },
   {
@@ -45,7 +48,8 @@ const templates = [
     title: "Finance & Crypto",
     description: "Money tips, investing, crypto news",
     icon: TrendingUp,
-    color: "bg-green-500/10 text-green-500",
+    gradient: "from-green-500/20 to-emerald-500/20",
+    iconColor: "text-green-400",
     tags: ["Finance", "Crypto", "Investing"],
   },
   {
@@ -53,7 +57,8 @@ const templates = [
     title: "Entertainment",
     description: "Movies, gaming, celebrity gossip",
     icon: Film,
-    color: "bg-yellow-500/10 text-yellow-500",
+    gradient: "from-yellow-500/20 to-orange-500/20",
+    iconColor: "text-yellow-400",
     tags: ["Movies", "Gaming", "Celebrity"],
   },
   {
@@ -61,38 +66,40 @@ const templates = [
     title: "Humor & Memes",
     description: "Funny stories, fails, viral content",
     icon: Laugh,
-    color: "bg-orange-500/10 text-orange-500",
+    gradient: "from-orange-500/20 to-red-500/20",
+    iconColor: "text-orange-400",
     tags: ["Humor", "Memes", "Fails"],
   },
 ];
 
 export default function CreatePage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Create Video</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-4xl font-bold tracking-tight">Create Video</h1>
+        <p className="text-muted-foreground mt-1">
           Choose a template or start from scratch
         </p>
       </div>
 
-      {/* Quick Start */}
-      <Card className="border-primary/50 bg-primary/5">
-        <CardHeader>
+      {/* AI Quick Create - Hero Card */}
+      <Card className="border-[#C9F73A]/30 bg-gradient-to-br from-[#C9F73A]/5 to-transparent overflow-hidden relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#C9F73A]/10 via-transparent to-[#C9F73A]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <CardHeader className="pb-4 relative">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-                <Sparkles className="h-6 w-6 text-primary-foreground" />
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C9F73A] shadow-[0_0_30px_rgba(201,247,58,0.3)] group-hover:shadow-[0_0_40px_rgba(201,247,58,0.5)] transition-all">
+                <Wand2 className="h-7 w-7 text-black" />
               </div>
               <div>
-                <CardTitle>AI Quick Create</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl">AI Quick Create</CardTitle>
+                <CardDescription className="text-base mt-0.5">
                   Describe your video and let AI do the rest
                 </CardDescription>
               </div>
             </div>
-            <Button>
+            <Button className="bg-[#C9F73A] text-black hover:bg-[#D4FF4A] hover:shadow-[0_0_20px_rgba(201,247,58,0.4)] transition-all">
               Try Now
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -102,25 +109,30 @@ export default function CreatePage() {
 
       {/* Templates Grid */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Templates</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <h2 className="text-lg font-semibold mb-4">Templates</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-stagger">
           {templates.map((template) => (
             <Card
               key={template.id}
-              className="hover:border-primary/50 transition-colors cursor-pointer group"
+              className="border-white/[0.08] bg-transparent hover:border-[#C9F73A]/40 hover:shadow-[0_0_30px_rgba(201,247,58,0.08)] transition-all cursor-pointer group overflow-hidden"
             >
-              <CardHeader>
+              <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+              <CardHeader className="relative">
                 <div className="flex items-start justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${template.color}`}>
-                    <template.icon className="h-5 w-5" />
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.05] group-hover:bg-white/[0.08] transition-colors`}>
+                    <template.icon className={`h-5 w-5 ${template.iconColor}`} />
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                 </div>
-                <CardTitle className="text-base mt-3">{template.title}</CardTitle>
+                <CardTitle className="text-base mt-4">{template.title}</CardTitle>
                 <CardDescription>{template.description}</CardDescription>
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div className="flex flex-wrap gap-1.5 mt-3">
                   {template.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="bg-white/[0.05] text-muted-foreground border-0 text-[11px]"
+                    >
                       {tag}
                     </Badge>
                   ))}
@@ -133,38 +145,40 @@ export default function CreatePage() {
 
       {/* Advanced Options */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Advanced</h2>
+        <h2 className="text-lg font-semibold mb-4">Advanced</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <Link href="/workflows/new">
+          <Link href="/workflows/new">
+            <Card className="border-white/[0.08] bg-transparent hover:border-[#C9F73A]/40 hover:shadow-[0_0_20px_rgba(201,247,58,0.08)] transition-all cursor-pointer group">
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                    <Sparkles className="h-5 w-5 text-cyan-500" />
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+                    <Sparkles className="h-5 w-5 text-cyan-400" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-base">Workflow Builder</CardTitle>
                     <CardDescription>
                       Build custom video pipelines with nodes
                     </CardDescription>
                   </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </CardHeader>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+          <Card className="border-white/[0.08] bg-transparent hover:border-[#C9F73A]/40 hover:shadow-[0_0_20px_rgba(201,247,58,0.08)] transition-all cursor-pointer group">
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-500/10">
-                  <Mic className="h-5 w-5 text-pink-500" />
+              <div className="flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-pink-500/10 group-hover:bg-pink-500/20 transition-colors">
+                  <Mic className="h-5 w-5 text-pink-400" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <CardTitle className="text-base">Upload Script</CardTitle>
                   <CardDescription>
                     Use your own script or voiceover
                   </CardDescription>
                 </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </CardHeader>
           </Card>

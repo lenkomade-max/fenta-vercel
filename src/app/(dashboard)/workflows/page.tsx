@@ -1,21 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Workflow, Play, MoreHorizontal, Zap } from "lucide-react";
+import { Plus, Workflow, Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function WorkflowsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Workflows</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold tracking-tight">Workflows</h1>
+          <p className="text-muted-foreground mt-1">
             Build and manage your video creation pipelines
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="bg-[#C9F73A] text-black hover:bg-[#D4FF4A] hover:shadow-[0_0_20px_rgba(201,247,58,0.4)] transition-all">
           <Link href="/workflows/new">
             <Plus className="mr-2 h-4 w-4" />
             New Workflow
@@ -24,23 +23,23 @@ export default function WorkflowsPage() {
       </div>
 
       {/* Empty State */}
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-            <Workflow className="h-8 w-8 text-primary" />
+      <Card className="border-white/[0.08] bg-transparent">
+        <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#C9F73A]/10 mb-6">
+            <Workflow className="h-10 w-10 text-[#C9F73A]" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">No workflows yet</h3>
-          <p className="text-muted-foreground mb-6 max-w-sm">
+          <h3 className="text-2xl font-semibold mb-2">No workflows yet</h3>
+          <p className="text-muted-foreground mb-8 max-w-md">
             Create your first workflow to automate video production with custom pipelines
           </p>
           <div className="flex gap-3">
-            <Button asChild>
+            <Button asChild className="bg-[#C9F73A] text-black hover:bg-[#D4FF4A] hover:shadow-[0_0_20px_rgba(201,247,58,0.4)] transition-all">
               <Link href="/workflows/new">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Workflow
               </Link>
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" className="border-white/[0.15] hover:bg-white/[0.05] hover:border-white/25">
               <Zap className="mr-2 h-4 w-4" />
               Use Template
             </Button>
@@ -49,8 +48,8 @@ export default function WorkflowsPage() {
       </Card>
 
       {/* Info Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 animate-stagger">
+        <Card className="border-white/[0.08] bg-transparent hover:border-white/20 transition-all">
           <CardHeader>
             <CardTitle className="text-base">Visual Builder</CardTitle>
             <CardDescription>
@@ -59,7 +58,7 @@ export default function WorkflowsPage() {
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-white/[0.08] bg-transparent hover:border-white/20 transition-all">
           <CardHeader>
             <CardTitle className="text-base">AI Powered</CardTitle>
             <CardDescription>
@@ -68,7 +67,7 @@ export default function WorkflowsPage() {
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-white/[0.08] bg-transparent hover:border-white/20 transition-all">
           <CardHeader>
             <CardTitle className="text-base">Batch Processing</CardTitle>
             <CardDescription>
