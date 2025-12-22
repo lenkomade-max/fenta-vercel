@@ -1,0 +1,1794 @@
+openapi: 3.0.3
+info:
+  title: Fenta Web API
+  description: |
+    SaaS platform for generating and editing viral short-form videos using AI, stocks, and custom assets.
+
+    ## Features
+    - Visual Workflow Builder with 12 core nodes
+    - Template-based video montage
+    - AI-powered script generation and voice synthesis
+    - Automatic subtitle generation with styling
+    - Stock integration (Pexels)
+    - KAI (KEI) integration for image/video generation
+    - Scheduling and batch processing
+    - Token-based billing with quota management
+    - Built-in AI assistant for workflow creation
+
+    ## Authentication
+    All API requests require authentication using JWT tokens or Personal Access Tokens (PAT).
+    Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Rate Limits
+    - 100 requests per minute for authenticated users
+    - 1000 requests per hour for authenticated users
+
+    ## Pagination
+    List endpoints support pagination using `page` and `limit` query parameters.
+
+  version: 1.0.0
+  contact:
+    name: Fenta Web Support
+    email: support@fentaweb.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.fentaweb.com/v1
+    description: Production server
+  - url: https://staging-api.fentaweb.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Templates
+    description: Video montage templates management
+  - name: Workflows
+    description: Visual workflow builder and execution
+  - name: Jobs
+    description: Direct render jobs without workflow graph
+  - name: Assets
+    description: File uploads, stock search, and AI generations
+  - name: Schedules
+    description: Cron-based workflow scheduling
+  - name: Renders
+    description: Render history and artifact management
+  - name: Usage
+    description: Token usage and billing information
+  - name: Integrations
+    description: External service integrations
+  - name: Organizations
+    description: Organization and project management
+  - name: Webhooks
+    description: Webhook configuration and delivery
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Create a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePassword123!
+                name:
+                  type: string
+                  example: John Doe
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: User already exists
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== TEMPLATES ====================
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List all templates
+      description: Get all montage templates accessible to the user
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: aspect
+          in: query
+          schema:
+            type: string
+            enum: ['9:16', '16:9', '1:1', '4:5']
+          description: Filter by aspect ratio
+      responses:
+        '200':
+          description: Templates list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Templates]
+      summary: Create new template
+      description: Create a new montage template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /templates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Templates]
+      summary: Get template by ID
+      description: Retrieve detailed template information
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Templates]
+      summary: Update template
+      description: Update template properties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdate'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Templates]
+      summary: Delete template
+      description: Delete a template (soft delete)
+      responses:
+        '204':
+          description: Template deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== WORKFLOWS ====================
+  /workflows:
+    get:
+      tags: [Workflows]
+      summary: List all workflows
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed, preview, production, archived]
+      responses:
+        '200':
+          description: Workflows list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Workflows]
+      summary: Create new workflow
+      description: Create a new workflow graph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowCreate'
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+  /workflows/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Workflows]
+      summary: Get workflow by ID
+      responses:
+        '200':
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+    patch:
+      tags: [Workflows]
+      summary: Update workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdate'
+      responses:
+        '200':
+          description: Workflow updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+    delete:
+      tags: [Workflows]
+      summary: Delete workflow
+      responses:
+        '204':
+          description: Workflow deleted
+
+  /workflows/{id}/run:
+    post:
+      tags: [Workflows]
+      summary: Execute workflow
+      description: Run workflow and create render job
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [test, full]
+                  default: full
+                  description: Test mode renders only first 10-15 seconds
+                variables:
+                  type: object
+                  additionalProperties: true
+                  description: Override workflow variables
+      responses:
+        '202':
+          description: Workflow execution started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    example: job_abc123xyz
+                  status:
+                    type: string
+                    example: queued
+
+  /workflows/{id}/estimate:
+    post:
+      tags: [Workflows]
+      summary: Estimate workflow cost
+      description: Calculate estimated cost and duration before execution
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Cost estimation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEstimate'
+
+  # ==================== JOBS ====================
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: List all jobs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, processing, completed, failed, cancelled]
+      responses:
+        '200':
+          description: Jobs list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Jobs]
+      summary: Create direct render job
+      description: |
+        Create a render job without workflow graph.
+        This is the quickest way to render video using a template.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreate'
+            examples:
+              simple_render:
+                summary: Simple render with uploaded video
+                value:
+                  template_id: tmpl_shorts_v1
+                  sources:
+                    - type: upload
+                      uri: s3://bucket/user/clip.mp4
+                  script:
+                    lang: en
+                    text: A bizarre event shocked downtown tonight...
+                  tts:
+                    engine: kokoro
+                    voice: alloy_en
+                  subtitles:
+                    style: karaoke_bounce
+                  output:
+                    profile: 9x16_1080p
+              stock_based:
+                summary: Render using stock footage
+                value:
+                  template_id: tmpl_shorts_v1
+                  sources:
+                    - type: stock
+                      provider: pexels
+                      query: storm city night
+                  script:
+                    lang: en
+                    text: Breaking news from the city center
+                  tts:
+                    engine: kokoro
+                    voice: alloy_en
+                    speed: 1.02
+                  subtitles:
+                    style: clean_box
+                  output:
+                    profile: 9x16_1080p
+                  webhook_url: https://app.example.com/hook/render
+                  budget:
+                    max_cost_usd: 0.15
+                    max_tokens: 12000
+      responses:
+        '202':
+          description: Job created and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /jobs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Jobs]
+      summary: Get job status
+      description: Get detailed job status and progress
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /jobs/{id}/cancel:
+    post:
+      tags: [Jobs]
+      summary: Cancel job
+      description: Cancel a queued or processing job
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /jobs/{id}/retry:
+    post:
+      tags: [Jobs]
+      summary: Retry failed job
+      description: Retry a failed job with same parameters
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '202':
+          description: Job retry queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  # ==================== ASSETS ====================
+  /assets:
+    get:
+      tags: [Assets]
+      summary: List all assets
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [image, video, audio]
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [upload, stock, kai, generated]
+      responses:
+        '200':
+          description: Assets list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /assets/init:
+    post:
+      tags: [Assets]
+      summary: Initialize upload
+      description: Get presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename, contentType, size]
+              properties:
+                filename:
+                  type: string
+                  example: my-video.mp4
+                contentType:
+                  type: string
+                  example: video/mp4
+                size:
+                  type: integer
+                  example: 10485760
+                  description: File size in bytes
+      responses:
+        '200':
+          description: Upload initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assetId:
+                    type: string
+                    example: asset_abc123
+                  uploadUrl:
+                    type: string
+                    format: uri
+                    example: https://s3.amazonaws.com/bucket/path?signature=...
+                  expiresIn:
+                    type: integer
+                    example: 3600
+                    description: URL expiration in seconds
+
+  /assets/complete:
+    post:
+      tags: [Assets]
+      summary: Complete upload
+      description: Finalize upload and process asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assetId]
+              properties:
+                assetId:
+                  type: string
+                  example: asset_abc123
+      responses:
+        '200':
+          description: Upload completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+  /assets/stock/search:
+    get:
+      tags: [Assets]
+      summary: Search stock assets
+      description: Search Pexels and other stock providers
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          example: storm city night
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [pexels]
+            default: pexels
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [image, video]
+            default: video
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockAsset'
+
+  /assets/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Assets]
+      summary: Get asset details
+      responses:
+        '200':
+          description: Asset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+    delete:
+      tags: [Assets]
+      summary: Delete asset
+      responses:
+        '204':
+          description: Asset deleted
+
+  # ==================== KAI INTEGRATION ====================
+  /kai/generate-image:
+    post:
+      tags: [Integrations]
+      summary: Generate image using KAI
+      description: Proxy to KAI image generation with credit mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                  example: A futuristic city at sunset, cyberpunk style
+                model:
+                  type: string
+                  example: flux-pro
+                  default: flux-pro
+                width:
+                  type: integer
+                  example: 1024
+                height:
+                  type: integer
+                  example: 1024
+                seed:
+                  type: integer
+                  example: 42
+                variations:
+                  type: integer
+                  minimum: 1
+                  maximum: 4
+                  default: 1
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generationId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [queued, processing]
+                  estimatedCost:
+                    type: number
+                    example: 0.04
+
+  /kai/generate-video:
+    post:
+      tags: [Integrations]
+      summary: Generate video using KAI
+      description: Generate video clips using Sora, VEO, Minimax, BIO3, etc.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                  example: A cat walking through a neon-lit alley
+                model:
+                  type: string
+                  enum: [sora, veo, minimax, bio3, cdance]
+                  example: sora
+                duration:
+                  type: number
+                  example: 10
+                  description: Duration in seconds (model-dependent)
+                aspect:
+                  type: string
+                  enum: ['9:16', '16:9', '1:1']
+                  default: '9:16'
+                seed:
+                  type: integer
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generationId:
+                    type: string
+                  status:
+                    type: string
+                  estimatedCost:
+                    type: number
+
+  /kai/edit-video:
+    post:
+      tags: [Integrations]
+      summary: Edit video using KAI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assetId, prompt]
+              properties:
+                assetId:
+                  type: string
+                  description: Source video asset ID
+                prompt:
+                  type: string
+                  example: Make it rain heavily
+                model:
+                  type: string
+      responses:
+        '202':
+          description: Edit started
+
+  /kai/generations/{id}:
+    get:
+      tags: [Integrations]
+      summary: Get generation status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Generation status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [queued, processing, completed, failed]
+                  progress:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        assetId:
+                          type: string
+                        url:
+                          type: string
+                  cost:
+                    type: number
+
+  # ==================== SCHEDULES ====================
+  /schedules:
+    get:
+      tags: [Schedules]
+      summary: List all schedules
+      responses:
+        '200':
+          description: Schedules list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Schedule'
+
+    post:
+      tags: [Schedules]
+      summary: Create schedule
+      description: Attach cron schedule to workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreate'
+      responses:
+        '201':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+
+  /schedules/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Schedules]
+      summary: Get schedule details
+      responses:
+        '200':
+          description: Schedule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+
+    patch:
+      tags: [Schedules]
+      summary: Update schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cron:
+                  type: string
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Schedule updated
+
+    delete:
+      tags: [Schedules]
+      summary: Delete schedule
+      responses:
+        '204':
+          description: Schedule deleted
+
+  # ==================== USAGE & BILLING ====================
+  /usage:
+    get:
+      tags: [Usage]
+      summary: Get usage statistics
+      description: Get token usage, render seconds, and costs
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: '2024-01-01'
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: '2024-01-31'
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStats'
+
+  /usage/quota:
+    get:
+      tags: [Usage]
+      summary: Get quota information
+      description: Get current subscription limits and usage
+      responses:
+        '200':
+          description: Quota information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: string
+                    example: pro
+                  limits:
+                    type: object
+                    properties:
+                      tokens:
+                        type: integer
+                        example: 1000000
+                      renderSeconds:
+                        type: integer
+                        example: 7200
+                      storage:
+                        type: integer
+                        example: 107374182400
+                        description: Storage in bytes
+                  used:
+                    type: object
+                    properties:
+                      tokens:
+                        type: integer
+                      renderSeconds:
+                        type: integer
+                      storage:
+                        type: integer
+                  remaining:
+                    type: object
+                    properties:
+                      tokens:
+                        type: integer
+                      renderSeconds:
+                        type: integer
+                      storage:
+                        type: integer
+
+  # ==================== WEBHOOKS ====================
+  /webhooks:
+    get:
+      tags: [Webhooks]
+      summary: List webhooks
+      responses:
+        '200':
+          description: Webhooks list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Webhook'
+
+    post:
+      tags: [Webhooks]
+      summary: Create webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookCreate'
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+  /webhooks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Webhooks]
+      summary: Get webhook details
+      responses:
+        '200':
+          description: Webhook details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+    patch:
+      tags: [Webhooks]
+      summary: Update webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: string
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Webhook updated
+
+    delete:
+      tags: [Webhooks]
+      summary: Delete webhook
+      responses:
+        '204':
+          description: Webhook deleted
+
+  /webhooks/{id}/deliveries:
+    get:
+      tags: [Webhooks]
+      summary: Get webhook deliveries
+      description: Get delivery history and retry information
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Delivery history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookDelivery'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+# ==================== COMPONENTS ====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      example: abc123xyz
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user_abc123
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, editor, viewer]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          example: tmpl_shorts_v1
+        name:
+          type: string
+          example: Shorts Clean Bold
+        aspect:
+          type: string
+          enum: ['9:16', '16:9', '1:1', '4:5']
+        resolution:
+          type: string
+          example: 1080x1920
+        tracks:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [video, subtitle, overlay, audio]
+              id:
+                type: string
+              z:
+                type: integer
+                description: Z-index for layering
+              style:
+                type: object
+        overlays:
+          type: array
+          items:
+            type: object
+        placeholders:
+          type: object
+        rules:
+          type: object
+          properties:
+            cuts:
+              type: string
+            min_scene:
+              type: number
+            max_scene:
+              type: number
+        subtitle_style_presets:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TemplateCreate:
+      type: object
+      required: [name, aspect, resolution]
+      properties:
+        name:
+          type: string
+        aspect:
+          type: string
+        resolution:
+          type: string
+        tracks:
+          type: array
+        overlays:
+          type: array
+        placeholders:
+          type: object
+        rules:
+          type: object
+        subtitle_style_presets:
+          type: array
+
+    TemplateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        tracks:
+          type: array
+        overlays:
+          type: array
+        placeholders:
+          type: object
+        rules:
+          type: object
+
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: string
+          example: wf_daily_news_01
+        name:
+          type: string
+          example: Daily News Shorts
+        status:
+          type: string
+          enum: [draft, confirmed, preview, production, archived]
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+        variables:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WorkflowNode:
+      type: object
+      properties:
+        id:
+          type: string
+          example: n1
+        type:
+          type: string
+          enum:
+            - Input.Upload
+            - Input.Stock
+            - Input.KAI.GenerateImage
+            - Input.KAI.GenerateVideo
+            - Input.KAI.EditVideo
+            - Script.Generate
+            - Script.Transform
+            - Voice.TTS
+            - Audio.Mix
+            - Subtitle.Auto
+            - Edit.Timeline
+            - Output.Render
+            - Output.Download
+            - Schedule.Cron
+        params:
+          type: object
+          additionalProperties: true
+        position:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+
+    WorkflowEdge:
+      type: object
+      properties:
+        id:
+          type: string
+        from:
+          type: string
+          description: Source node ID
+        to:
+          type: string
+          description: Target node ID
+        fromPort:
+          type: string
+        toPort:
+          type: string
+
+    WorkflowCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        nodes:
+          type: array
+        edges:
+          type: array
+        variables:
+          type: object
+
+    WorkflowUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+        nodes:
+          type: array
+        edges:
+          type: array
+        variables:
+          type: object
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          example: job_abc123xyz
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, cancelled]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        workflowId:
+          type: string
+          nullable: true
+        templateId:
+          type: string
+        sources:
+          type: array
+        script:
+          type: object
+        tts:
+          type: object
+        subtitles:
+          type: object
+        output:
+          type: object
+        result:
+          type: object
+          nullable: true
+          properties:
+            videoUrl:
+              type: string
+            thumbnailUrl:
+              type: string
+            srtUrl:
+              type: string
+            duration:
+              type: number
+        cost:
+          type: object
+          properties:
+            tokens:
+              type: integer
+            renderSeconds:
+              type: number
+            totalUsd:
+              type: number
+        timing:
+          type: object
+          properties:
+            queuedAt:
+              type: string
+              format: date-time
+            startedAt:
+              type: string
+              format: date-time
+            completedAt:
+              type: string
+              format: date-time
+        error:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    JobCreate:
+      type: object
+      required: [template_id, output]
+      properties:
+        template_id:
+          type: string
+        sources:
+          type: array
+          items:
+            type: object
+        script:
+          type: object
+          properties:
+            lang:
+              type: string
+            text:
+              type: string
+        tts:
+          type: object
+          properties:
+            engine:
+              type: string
+            voice:
+              type: string
+            speed:
+              type: number
+        subtitles:
+          type: object
+          properties:
+            style:
+              type: string
+        output:
+          type: object
+          required: [profile]
+          properties:
+            profile:
+              type: string
+              enum: [9x16_1080p, 16x9_1080p, 1x1_1080p, 9x16_720p]
+        webhook_url:
+          type: string
+          format: uri
+        budget:
+          type: object
+          properties:
+            max_cost_usd:
+              type: number
+            max_tokens:
+              type: integer
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [image, video, audio]
+        source:
+          type: string
+          enum: [upload, stock, kai, generated]
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+        metadata:
+          type: object
+          properties:
+            filename:
+              type: string
+            size:
+              type: integer
+            duration:
+              type: number
+            width:
+              type: integer
+            height:
+              type: integer
+            format:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    StockAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        duration:
+          type: number
+          nullable: true
+
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+        workflowId:
+          type: string
+        cron:
+          type: string
+          example: 0 10 * * *
+        timezone:
+          type: string
+          example: UTC
+        enabled:
+          type: boolean
+        lastRun:
+          type: string
+          format: date-time
+          nullable: true
+        nextRun:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ScheduleCreate:
+      type: object
+      required: [workflowId, cron]
+      properties:
+        workflowId:
+          type: string
+        cron:
+          type: string
+        timezone:
+          type: string
+          default: UTC
+        enabled:
+          type: boolean
+          default: true
+
+    UsageStats:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
+        summary:
+          type: object
+          properties:
+            llmTokens:
+              type: object
+              properties:
+                prompt:
+                  type: integer
+                output:
+                  type: integer
+                total:
+                  type: integer
+            kaiCredits:
+              type: integer
+            renderSeconds:
+              type: number
+            storage:
+              type: integer
+            totalCostUsd:
+              type: number
+        breakdown:
+          type: array
+          items:
+            type: object
+
+    CostEstimate:
+      type: object
+      properties:
+        estimated:
+          type: object
+          properties:
+            tokens:
+              type: integer
+            renderSeconds:
+              type: number
+            kaiCredits:
+              type: integer
+            totalUsd:
+              type: number
+            duration:
+              type: string
+              example: 2-5 minutes
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              component:
+                type: string
+              cost:
+                type: number
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - render.succeeded
+              - render.failed
+              - workflow.run.started
+              - workflow.run.finished
+              - job.completed
+              - job.failed
+        enabled:
+          type: boolean
+        secret:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    WebhookCreate:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+          default: true
+
+    WebhookDelivery:
+      type: object
+      properties:
+        id:
+          type: string
+        webhookId:
+          type: string
+        event:
+          type: string
+        status:
+          type: string
+          enum: [success, failed, pending]
+        attempts:
+          type: integer
+        response:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        nextRetry:
+          type: string
+          format: date-time
+          nullable: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid request parameters
+              details: {}
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: Invalid or missing authentication token
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Resource not found

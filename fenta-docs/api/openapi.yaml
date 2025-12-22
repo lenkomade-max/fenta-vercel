@@ -1,0 +1,1258 @@
+openapi: 3.0.3
+info:
+  title: Fenta Web API
+  description: |
+    SaaS платформа для автоматического создания коротких видео с использованием AI, стокового контента и пользовательских ассетов.
+
+    ## Особенности
+    - Visual Workflow Builder с 20+ типами узлов
+    - Шаблонный монтаж видео
+    - AI генерация скриптов и озвучки
+    - Автоматические субтитры с анимацией
+    - Интеграция со стоками (Pexels)
+    - KIE.ai для генерации изображений/видео (21+ моделей)
+    - Расписания и пакетная обработка
+    - Токенный биллинг с подпиской
+
+    ## Аутентификация
+    Используется Supabase Auth. Включайте токен в заголовок:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    ## Rate Limits
+    - 100 запросов/минуту
+    - 1000 запросов/час
+
+    ## Pagination
+    List endpoints поддерживают `page` и `limit` query параметры.
+
+  version: 1.0.0
+  contact:
+    name: Fenta Support
+    email: support@fenta.com
+
+servers:
+  - url: https://api.fenta.com/v1
+    description: Production
+  - url: https://staging.fenta.com/v1
+    description: Staging
+  - url: http://localhost:3000/api/v1
+    description: Local (Next.js)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+    description: Аутентификация (Supabase Auth)
+  - name: Workflows
+    description: Визуальные workflow графы
+  - name: Templates
+    description: Шаблоны монтажа
+  - name: Jobs
+    description: Задачи рендера
+  - name: Assets
+    description: Медиа файлы
+  - name: Usage
+    description: Использование и квоты
+  - name: Organizations
+    description: Организации и проекты
+
+paths:
+  # ==================== AUTH ====================
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: Регистрация
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                full_name:
+                  type: string
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/signin:
+    post:
+      tags: [Auth]
+      summary: Вход
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/signout:
+    post:
+      tags: [Auth]
+      summary: Выход
+      responses:
+        '200':
+          description: Успешный выход
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление токена
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Токен обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # ==================== WORKFLOWS ====================
+  /workflows:
+    get:
+      tags: [Workflows]
+      summary: Список workflows
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: project_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed, production, archived]
+      responses:
+        '200':
+          description: Список workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Workflows]
+      summary: Создать workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowCreate'
+      responses:
+        '201':
+          description: Workflow создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+  /workflows/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Workflows]
+      summary: Получить workflow
+      responses:
+        '200':
+          description: Workflow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Workflows]
+      summary: Обновить workflow
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdate'
+      responses:
+        '200':
+          description: Обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+    delete:
+      tags: [Workflows]
+      summary: Удалить workflow
+      responses:
+        '204':
+          description: Удален
+
+  /workflows/{id}/run:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Workflows]
+      summary: Запустить workflow
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [production, test, preview]
+                  default: production
+                variables:
+                  type: object
+      responses:
+        '202':
+          description: Запущен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /workflows/{id}/estimate:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Workflows]
+      summary: Оценка стоимости
+      responses:
+        '200':
+          description: Оценка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEstimate'
+
+  # ==================== TEMPLATES ====================
+  /templates:
+    get:
+      tags: [Templates]
+      summary: Список шаблонов
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: aspect
+          in: query
+          schema:
+            type: string
+            enum: ['9:16', '16:9', '1:1', '4:5']
+        - name: is_public
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Список шаблонов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Templates]
+      summary: Создать шаблон
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '201':
+          description: Шаблон создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /templates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Templates]
+      summary: Получить шаблон
+      responses:
+        '200':
+          description: Шаблон
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+    patch:
+      tags: [Templates]
+      summary: Обновить шаблон
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdate'
+      responses:
+        '200':
+          description: Обновлен
+
+    delete:
+      tags: [Templates]
+      summary: Удалить шаблон
+      responses:
+        '204':
+          description: Удален
+
+  # ==================== JOBS ====================
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: Список jobs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, processing, completed, failed, cancelled]
+        - name: workflow_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Jobs]
+      summary: Создать job (прямой рендер)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreate'
+      responses:
+        '202':
+          description: Job создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /jobs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Jobs]
+      summary: Получить job
+      responses:
+        '200':
+          description: Job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+    delete:
+      tags: [Jobs]
+      summary: Отменить job
+      responses:
+        '200':
+          description: Отменен
+
+  /jobs/{id}/logs:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Jobs]
+      summary: Логи job
+      responses:
+        '200':
+          description: Логи
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobLog'
+
+  # ==================== ASSETS ====================
+  /assets:
+    get:
+      tags: [Assets]
+      summary: Список ассетов
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [image, video, audio]
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [upload, stock, kai, generated]
+      responses:
+        '200':
+          description: Список ассетов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Assets]
+      summary: Загрузить ассет
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                project_id:
+                  type: string
+      responses:
+        '201':
+          description: Загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+  /assets/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Assets]
+      summary: Получить ассет
+      responses:
+        '200':
+          description: Ассет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+    delete:
+      tags: [Assets]
+      summary: Удалить ассет
+      responses:
+        '204':
+          description: Удален
+
+  /assets/stock/search:
+    get:
+      tags: [Assets]
+      summary: Поиск стокового контента
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [pexels]
+            default: pexels
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [image, video]
+            default: video
+        - name: orientation
+          in: query
+          schema:
+            type: string
+            enum: [portrait, landscape, square]
+        - name: count
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: Результаты поиска
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockItem'
+
+  # ==================== USAGE ====================
+  /usage/quota:
+    get:
+      tags: [Usage]
+      summary: Текущая квота
+      responses:
+        '200':
+          description: Квота
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quota'
+
+  /usage/statistics:
+    get:
+      tags: [Usage]
+      summary: Статистика использования
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+      responses:
+        '200':
+          description: Статистика
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStatistics'
+
+  # ==================== VOICES & MUSIC ====================
+  /voices:
+    get:
+      tags: [Assets]
+      summary: Список голосов TTS
+      responses:
+        '200':
+          description: Голоса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kokoro:
+                    type: array
+                    items:
+                      type: string
+                  openai:
+                    type: array
+                    items:
+                      type: string
+
+  /music-tags:
+    get:
+      tags: [Assets]
+      summary: Музыкальные теги
+      responses:
+        '200':
+          description: Теги
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /effects:
+    get:
+      tags: [Assets]
+      summary: Библиотека эффектов
+      responses:
+        '200':
+          description: Эффекты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  effects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Effect'
+
+  # ==================== ORGANIZATIONS ====================
+  /organizations:
+    get:
+      tags: [Organizations]
+      summary: Мои организации
+      responses:
+        '200':
+          description: Список организаций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+
+  /organizations/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Organizations]
+      summary: Участники организации
+      responses:
+        '200':
+          description: Участники
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgMember'
+
+  # ==================== WEBHOOKS ====================
+  /webhooks:
+    get:
+      tags: [Webhooks]
+      summary: Список webhooks
+      responses:
+        '200':
+          description: Webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+    post:
+      tags: [Webhooks]
+      summary: Создать webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [job.started, job.completed, job.failed, quota.warning]
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth JWT token
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        session:
+          type: object
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            expires_at:
+              type: integer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, confirmed, preview, production, archived]
+        graph:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                type: object
+            edges:
+              type: array
+              items:
+                type: object
+        variables:
+          type: object
+        run_count:
+          type: integer
+        last_run_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    WorkflowCreate:
+      type: object
+      required: [name, graph]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        project_id:
+          type: string
+        graph:
+          type: object
+        variables:
+          type: object
+
+    WorkflowUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        graph:
+          type: object
+        variables:
+          type: object
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        aspect:
+          type: string
+        resolution:
+          type: string
+        spec:
+          type: object
+        is_public:
+          type: boolean
+        thumbnail_url:
+          type: string
+        usage_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    TemplateCreate:
+      type: object
+      required: [name, aspect, resolution, spec]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        aspect:
+          type: string
+          enum: ['9:16', '16:9', '1:1', '4:5']
+        resolution:
+          type: string
+        spec:
+          type: object
+
+    TemplateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        spec:
+          type: object
+        is_public:
+          type: boolean
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        workflow_id:
+          type: string
+        template_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, cancelled]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        config:
+          type: object
+        result:
+          type: object
+          properties:
+            video_url:
+              type: string
+            thumbnail_url:
+              type: string
+            srt_url:
+              type: string
+            duration:
+              type: number
+        error:
+          type: object
+        cost_tokens:
+          type: integer
+        cost_render_seconds:
+          type: number
+        cost_kai_credits:
+          type: integer
+        cost_total_usd:
+          type: number
+        queued_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    JobCreate:
+      type: object
+      properties:
+        template_id:
+          type: string
+        workflow_id:
+          type: string
+        sources:
+          type: array
+          items:
+            type: object
+        script:
+          type: object
+        tts:
+          type: object
+        subtitles:
+          type: object
+        output:
+          type: object
+        budget:
+          type: object
+
+    JobLog:
+      type: object
+      properties:
+        id:
+          type: string
+        level:
+          type: string
+          enum: [debug, info, warn, error]
+        stage:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [image, video, audio]
+        source:
+          type: string
+          enum: [upload, stock, kai, generated]
+        url:
+          type: string
+        thumbnail_url:
+          type: string
+        filename:
+          type: string
+        content_type:
+          type: string
+        size_bytes:
+          type: integer
+        duration_seconds:
+          type: number
+        width:
+          type: integer
+        height:
+          type: integer
+        status:
+          type: string
+          enum: [processing, ready, failed]
+        created_at:
+          type: string
+          format: date-time
+
+    StockItem:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        preview_url:
+          type: string
+        duration:
+          type: number
+        width:
+          type: integer
+        height:
+          type: integer
+
+    Effect:
+      type: object
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        staticEffectPath:
+          type: string
+        url:
+          type: string
+
+    Quota:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, starter, pro, enterprise]
+        limits:
+          type: object
+          properties:
+            tokens:
+              type: integer
+            render_seconds:
+              type: integer
+            kai_credits:
+              type: integer
+            storage_bytes:
+              type: integer
+        used:
+          type: object
+          properties:
+            tokens:
+              type: integer
+            render_seconds:
+              type: number
+            kai_credits:
+              type: integer
+            storage_bytes:
+              type: integer
+        remaining:
+          type: object
+        reset_at:
+          type: string
+          format: date-time
+
+    UsageStatistics:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start_date:
+              type: string
+              format: date
+            end_date:
+              type: string
+              format: date
+        summary:
+          type: object
+          properties:
+            total_tokens:
+              type: integer
+            total_kai_credits:
+              type: integer
+            total_render_seconds:
+              type: number
+            total_cost_usd:
+              type: number
+        breakdown:
+          type: array
+          items:
+            type: object
+
+    CostEstimate:
+      type: object
+      properties:
+        estimated:
+          type: object
+          properties:
+            tokens:
+              type: integer
+            render_seconds:
+              type: number
+            kai_credits:
+              type: integer
+            total_usd:
+              type: number
+            duration:
+              type: string
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              node:
+                type: string
+              type:
+                type: string
+              cost:
+                type: number
+        quota_status:
+          type: object
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        plan:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    OrgMember:
+      type: object
+      properties:
+        user_id:
+          type: string
+        org_id:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, editor, viewer]
+        user:
+          $ref: '#/components/schemas/User'
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time

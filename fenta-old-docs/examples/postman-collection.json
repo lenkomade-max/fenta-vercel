@@ -1,0 +1,738 @@
+{
+  "info": {
+    "name": "Fenta Web API",
+    "description": "Complete API collection for Fenta Web SaaS platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.fentaweb.com/v1",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('authToken', response.token);",
+                  "    pm.environment.set('userId', response.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('authToken', response.token);",
+                  "    pm.environment.set('userId', response.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "List Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/templates?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "aspect",
+                  "value": "9:16",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('templateId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Custom Template\",\n  \"aspect\": \"9:16\",\n  \"resolution\": \"1080x1920\",\n  \"tracks\": [\n    {\n      \"type\": \"video\",\n      \"id\": \"main\",\n      \"z\": 0\n    },\n    {\n      \"type\": \"subtitle\",\n      \"id\": \"subs\",\n      \"z\": 10,\n      \"style\": {\n        \"font\": \"Inter\",\n        \"size\": 44,\n        \"shadow\": true,\n        \"bg\": \"box\"\n      }\n    }\n  ],\n  \"rules\": {\n    \"cuts\": \"auto_by_beats_or_speech\",\n    \"min_scene\": 1.2,\n    \"max_scene\": 4.0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates"]
+            }
+          }
+        },
+        {
+          "name": "Get Template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates", "{{templateId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "item": [
+        {
+          "name": "List Workflows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workflows?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Workflow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('workflowId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Daily News Shorts\",\n  \"description\": \"Automated news video generation\",\n  \"nodes\": [\n    {\n      \"id\": \"n1\",\n      \"type\": \"Input.Stock\",\n      \"params\": {\n        \"provider\": \"pexels\",\n        \"query\": \"breaking news city\",\n        \"count\": 3\n      },\n      \"position\": {\"x\": 100, \"y\": 100}\n    },\n    {\n      \"id\": \"n2\",\n      \"type\": \"Script.Generate\",\n      \"params\": {\n        \"genre\": \"news\",\n        \"lang\": \"en\",\n        \"prompt\": \"30s punchy headline + 3 beats\"\n      },\n      \"position\": {\"x\": 100, \"y\": 250}\n    },\n    {\n      \"id\": \"n3\",\n      \"type\": \"Voice.TTS\",\n      \"params\": {\n        \"engine\": \"kokoro\",\n        \"voice\": \"alloy_en\",\n        \"speed\": 1.02\n      },\n      \"position\": {\"x\": 100, \"y\": 400}\n    },\n    {\n      \"id\": \"n4\",\n      \"type\": \"Subtitle.Auto\",\n      \"params\": {\n        \"source\": \"audio\",\n        \"style\": \"clean_box\"\n      },\n      \"position\": {\"x\": 300, \"y\": 400}\n    },\n    {\n      \"id\": \"n5\",\n      \"type\": \"Edit.Timeline\",\n      \"params\": {\n        \"templateId\": \"tmpl_shorts_v1\"\n      },\n      \"position\": {\"x\": 500, \"y\": 300}\n    },\n    {\n      \"id\": \"n6\",\n      \"type\": \"Output.Render\",\n      \"params\": {\n        \"profile\": \"9x16_1080p\"\n      },\n      \"position\": {\"x\": 700, \"y\": 300}\n    }\n  ],\n  \"edges\": [\n    {\"id\": \"e1\", \"from\": \"n1\", \"to\": \"n5\"},\n    {\"id\": \"e2\", \"from\": \"n2\", \"to\": \"n3\"},\n    {\"id\": \"e3\", \"from\": \"n3\", \"to\": \"n4\"},\n    {\"id\": \"e4\", \"from\": \"n4\", \"to\": \"n5\"},\n    {\"id\": \"e5\", \"from\": \"n5\", \"to\": \"n6\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workflows",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows"]
+            }
+          }
+        },
+        {
+          "name": "Get Workflow",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workflows/{{workflowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows", "{{workflowId}}"]
+            }
+          }
+        },
+        {
+          "name": "Estimate Cost",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workflows/{{workflowId}}/estimate",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows", "{{workflowId}}", "estimate"]
+            }
+          }
+        },
+        {
+          "name": "Execute Workflow (Full)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('jobId', response.jobId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"full\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workflows/{{workflowId}}/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows", "{{workflowId}}", "run"]
+            }
+          }
+        },
+        {
+          "name": "Execute Workflow (Test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workflows/{{workflowId}}/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["workflows", "{{workflowId}}", "run"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "List Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Direct Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('jobId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": \"tmpl_shorts_v1\",\n  \"sources\": [\n    {\n      \"type\": \"stock\",\n      \"provider\": \"pexels\",\n      \"query\": \"sunset beach\",\n      \"count\": 3\n    }\n  ],\n  \"script\": {\n    \"lang\": \"en\",\n    \"text\": \"Discover the beauty of nature. Stunning sunsets await you.\"\n  },\n  \"tts\": {\n    \"engine\": \"kokoro\",\n    \"voice\": \"nova_en\",\n    \"speed\": 1.0\n  },\n  \"subtitles\": {\n    \"style\": \"karaoke_bounce\"\n  },\n  \"output\": {\n    \"profile\": \"9x16_1080p\"\n  },\n  \"budget\": {\n    \"max_cost_usd\": 1.00\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"]
+            }
+          }
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assets",
+      "item": [
+        {
+          "name": "List Assets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assets?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["assets"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Initialize Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('assetId', response.assetId);",
+                  "    pm.environment.set('uploadUrl', response.uploadUrl);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"my-video.mp4\",\n  \"contentType\": \"video/mp4\",\n  \"size\": 52428800\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assets/init",
+              "host": ["{{baseUrl}}"],
+              "path": ["assets", "init"]
+            }
+          }
+        },
+        {
+          "name": "Complete Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{assetId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assets/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["assets", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Search Stock",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assets/stock/search?query=sunset beach&provider=pexels&type=video&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["assets", "stock", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "sunset beach"
+                },
+                {
+                  "key": "provider",
+                  "value": "pexels"
+                },
+                {
+                  "key": "type",
+                  "value": "video"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "KAI Integration",
+      "item": [
+        {
+          "name": "Generate Image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('generationId', response.generationId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A futuristic city at sunset, cyberpunk style, neon lights\",\n  \"model\": \"flux-pro\",\n  \"width\": 1024,\n  \"height\": 1024,\n  \"variations\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/kai/generate-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["kai", "generate-image"]
+            }
+          }
+        },
+        {
+          "name": "Generate Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A cat walking through a neon-lit alley at night\",\n  \"model\": \"sora\",\n  \"duration\": 10,\n  \"aspect\": \"9:16\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/kai/generate-video",
+              "host": ["{{baseUrl}}"],
+              "path": ["kai", "generate-video"]
+            }
+          }
+        },
+        {
+          "name": "Get Generation Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/kai/generations/{{generationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["kai", "generations", "{{generationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage & Billing",
+      "item": [
+        {
+          "name": "Get Quota",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usage/quota",
+              "host": ["{{baseUrl}}"],
+              "path": ["usage", "quota"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usage?startDate=2024-01-01&endDate=2024-01-31&groupBy=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["usage"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "day"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedules",
+      "item": [
+        {
+          "name": "List Schedules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules"]
+            }
+          }
+        },
+        {
+          "name": "Create Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('scheduleId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflowId\": \"{{workflowId}}\",\n  \"cron\": \"0 10 * * *\",\n  \"timezone\": \"America/New_York\",\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedules"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "List Webhooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            }
+          }
+        },
+        {
+          "name": "Create Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://myapp.com/webhooks/fenta\",\n  \"events\": [\n    \"render.succeeded\",\n    \"render.failed\"\n  ],\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
